@@ -9,6 +9,6 @@ class AppHTTPException(HTTPException):
         super().__init__(status_code=self.status_code, detail=self.detail)
 
 
-class PlanNotFoundHTTPException(AppHTTPException):
+class DepartmentNotFoundHTTPException(AppHTTPException):
     status_code = 404
-    detail = "Plan not found"
+    detail = "Department not found"

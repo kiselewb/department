@@ -9,5 +9,5 @@ class ObjectNotFound(AppException):
     detail = "Object Not Found"
 
 
-class PlanNotFound(AppException):
-    detail = "Plan Not Found"
+class DepartmentNotFound(ObjectNotFound):
+    detail = "Department Not Found"

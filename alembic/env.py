@@ -7,7 +7,7 @@ from alembic import context
 
 from app.config.settings import settings
 from app.models.base import Base
-from app.models.plans import Plans  # noqa: F401
+from app.models import *  # noqa: F403
 
 
 config = context.config
