@@ -51,4 +51,3 @@ from app.schemas.employee import EmployeeRead  # noqa: E402
 
 
 DepartmentTree.model_rebuild()
-

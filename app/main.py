@@ -3,8 +3,10 @@ from fastapi import FastAPI
 from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api.exception_handlers import register_exception_handlers
 from app.api.v1.api import router as main_router
 from app.config.settings import settings
+
 from app.utils.logger import setup_logger
 
 
@@ -34,5 +36,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_exception_handlers(app)
 
 app.include_router(main_router)

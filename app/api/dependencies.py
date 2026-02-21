@@ -10,11 +10,19 @@ from app.repositories.employee import EmployeeRepository
 from app.services.employee import EmployeeService
 
 
-def get_department_service(session: AsyncSession = Depends(get_session_db)) -> DepartmentService:
+def get_department_service(
+    session: AsyncSession = Depends(get_session_db),
+) -> DepartmentService:
     return DepartmentService(DepartmentRepository(session))
 
-def get_employee_service(session: AsyncSession = Depends(get_session_db)) -> EmployeeService:
+
+def get_employee_service(
+    session: AsyncSession = Depends(get_session_db),
+) -> EmployeeService:
     return EmployeeService(EmployeeRepository(session))
 
-DepartmentServiceDependency = Annotated[DepartmentService, Depends(get_department_service)]
+
+DepartmentServiceDependency = Annotated[
+    DepartmentService, Depends(get_department_service)
+]
 EmployeeServiceDependency = Annotated[EmployeeService, Depends(get_employee_service)]
