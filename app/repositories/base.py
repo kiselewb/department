@@ -1,7 +1,7 @@
 from typing import TypeVar, Generic, Type, Sequence
 
 from pydantic import BaseModel
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import Base
@@ -30,6 +30,19 @@ class BaseRepository(Generic[ModelType]):
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.scalars().one()
+
+    async def update(
+        self, data: BaseModel, exclude_unset: bool = False, **filter_by
+    ) -> ModelType:
+        stmt = (
+            update(self.model)
+            .filter_by(**filter_by)
+            .values(**data.model_dump(exclude_unset=exclude_unset))
+            .returning(self.model)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.scalar_one_or_none()
 
     async def delete(self, **filter_by) -> ModelType:
         stmt = delete(self.model).filter_by(**filter_by).returning(self.model)

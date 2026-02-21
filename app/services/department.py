@@ -16,8 +16,8 @@ class DepartmentService:
     async def get_departments(self, *filter, **filter_by):
         return await self.repository.get_all(*filter, **filter_by)
 
-    async def create_department(self, department_data: DepartmentCreate):
-        return await self.repository.create_department(department_data)
+    async def create_department(self, data: DepartmentCreate):
+        return await self.repository.create_department(data)
 
     async def update_department(self, department_id: int, data: DepartmentUpdate):
         new_department_data = data.model_dump(exclude_unset=True)

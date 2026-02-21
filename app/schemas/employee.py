@@ -21,10 +21,9 @@ class EmployeeBase(BaseModel):
 
 
 class EmployeeCreate(EmployeeBase):
-    pass
-
-
-class EmployeeRead(EmployeeBase):
-    id: int
     department_id: int
+
+
+class EmployeeRead(EmployeeCreate):
+    id: int
     created_at: datetime

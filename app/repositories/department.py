@@ -1,16 +1,15 @@
-from sqlalchemy import insert, update, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
+from sqlalchemy.exc import IntegrityError
+from app.models.department import Department
+from app.repositories.base import BaseRepository
+from app.schemas import DepartmentCreate, DepartmentUpdate
 from asyncpg.exceptions import (
     ForeignKeyViolationError,
     CheckViolationError,
     UniqueViolationError,
 )
-from sqlalchemy.orm import aliased
-
-from app.models.department import Department
-from app.repositories.base import BaseRepository
-from app.schemas import DepartmentCreate
 from app.utils.exceptions import (
     ParentDepartmentNotFoundException,
     DepartmentNotSelfParentException,
@@ -22,12 +21,9 @@ class DepartmentRepository(BaseRepository[Department]):
     def __init__(self, session: AsyncSession):
         super().__init__(Department, session)
 
-    async def create_department(self, data: DepartmentCreate) -> Department:
+    async def create_department(self, data: DepartmentCreate):
         try:
-            stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
-            result = await self.session.execute(stmt)
-            await self.session.commit()
-            return result.scalars().one()
+            return await self.create(data)
 
         except IntegrityError as e:
             await self.session.rollback()
@@ -72,17 +68,11 @@ class DepartmentRepository(BaseRepository[Department]):
         result = await self.session.execute(query)
         return result.scalar()
 
-    async def update_department(self, department_id: int, data: dict) -> Department:
+    async def update_department(self, department_id: int, data: dict):
         try:
-            stmt = (
-                update(self.model)
-                .where(self.model.id == department_id)
-                .values(**data)
-                .returning(self.model)
+            return await self.update(
+                DepartmentUpdate(**data), exclude_unset=True, id=department_id
             )
-            result = await self.session.execute(stmt)
-            await self.session.commit()
-            return result.scalar_one_or_none()
 
         except IntegrityError as e:
             await self.session.rollback()
