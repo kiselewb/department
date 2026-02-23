@@ -1,10 +1,10 @@
 from typing import Sequence
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.api.dependencies import DepartmentServiceDependency, EmployeeServiceDependency
 from app.schemas import EmployeeRead
-from app.schemas.department import DepartmentRead, DepartmentCreate, DepartmentUpdate
+from app.schemas.department import DepartmentRead, DepartmentCreate, DepartmentUpdate, DepartmentDeleteMode
 from app.schemas.employee import EmployeeBase
 
 router = APIRouter(prefix="/departments", tags=["Departments"])
@@ -15,6 +15,16 @@ async def get_departments(
     service: DepartmentServiceDependency,
 ) -> Sequence[DepartmentRead]:
     return await service.get_departments()
+
+
+@router.get("/{department_id}")
+async def get_department(
+    service: DepartmentServiceDependency,
+    department_id: int,
+    depth: int = Query(1, le=5),
+    include_employees: bool = True
+):
+    pass
 
 
 @router.post("/")
@@ -31,6 +41,17 @@ async def update_department(
     new_department_data: DepartmentUpdate,
 ) -> DepartmentRead:
     return await service.update_department(department_id, new_department_data)
+
+
+@router.delete("/{department_id}")
+async def delete_department(
+    service: DepartmentServiceDependency,
+    department_id: int,
+    mode: DepartmentDeleteMode,
+    reassign_to_department_id: int | None = Query(None, gt=0),
+):
+    await service.delete_department(department_id, mode, reassign_to_department_id)
+    return {"status": "OK"}
 
 
 @router.post("/{department_id}/employees/")

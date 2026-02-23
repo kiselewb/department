@@ -21,6 +21,10 @@ class DepartmentNotFoundException(ObjectNotFoundException):
     detail = "Подразделение не найдено"
 
 
+class TargetDepartmentNotFoundException(ObjectNotFoundException):
+    detail = "Целевое подразделение не найдено"
+
+
 class ParentDepartmentNotFoundException(ObjectNotFoundException):
     detail = "Родительское подразделение не найдено"
 
@@ -35,3 +39,11 @@ class DepartmentNameExistsException(AppException):
 
 class DepartmentCycleException(AppException):
     detail = "Подразделение не может быть родителем своего родителя (Ошибка цикла)"
+
+
+class ReassignModeException(AppException):
+    detail = "Поле reassign_to_department_id обязательно при режиме 'REASSIGN'"
+
+
+class ReassignToSelfException(AppException):
+    detail = "Удаляемое подразделение не может являться целевым"

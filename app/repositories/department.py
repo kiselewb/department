@@ -1,7 +1,9 @@
-from sqlalchemy import select
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
+
+from app.models import Employee
 from app.models.department import Department
 from app.repositories.base import BaseRepository
 from app.schemas import DepartmentCreate, DepartmentUpdate
@@ -80,3 +82,16 @@ class DepartmentRepository(BaseRepository[Department]):
                 raise DepartmentNameExistsException()
             else:
                 raise
+
+    async def delete_department_cascade(self, department_id: int):
+        await self.delete(id=department_id)
+
+    async def delete_department_reassign(self, department_id: int, reassign_to_department_id: int):
+        stmt = (
+            update(Employee)
+            .where(Employee.department_id == department_id)
+            .values(department_id=reassign_to_department_id)
+        )
+        await self.session.execute(stmt)
+        await self.session.execute(delete(self.model).where(self.model.id == department_id))
+        await self.session.commit()

@@ -6,7 +6,8 @@ from app.api.exceptions import (
     DepartmentNotFoundHTTPException,
     DepartmentCycleHTTPException,
     DataIsRequiredHTTPException,
-    RequestBodyRequiredHTTPException,
+    RequestBodyRequiredHTTPException, ReassignModeHTTPException, TargetDepartmentNotFoundHTTPException,
+    ReassignToSelfHTTPException,
 )
 from app.utils.exceptions import (
     ParentDepartmentNotFoundException,
@@ -15,7 +16,7 @@ from app.utils.exceptions import (
     DepartmentNotFoundException,
     DepartmentCycleException,
     DataIsRequiredException,
-    RequestBodyRequiredException,
+    RequestBodyRequiredException, ReassignModeException, TargetDepartmentNotFoundException, ReassignToSelfException,
 )
 
 
@@ -33,6 +34,10 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DepartmentNotFoundException)
     async def department_not_found(request: Request, exc: DepartmentNotFoundException):
         raise DepartmentNotFoundHTTPException()
+
+    @app.exception_handler(TargetDepartmentNotFoundException)
+    async def target_department_not_found(request: Request, exc: TargetDepartmentNotFoundException):
+        raise TargetDepartmentNotFoundHTTPException()
 
     @app.exception_handler(ParentDepartmentNotFoundException)
     async def parent_department_not_found(
@@ -55,3 +60,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DepartmentCycleException)
     async def department_cycle(request: Request, exc: DepartmentCycleException):
         raise DepartmentCycleHTTPException()
+
+    @app.exception_handler(ReassignModeException)
+    async def reassign_mode(request: Request, exc: ReassignModeException):
+        raise ReassignModeHTTPException()
+
+    @app.exception_handler(ReassignToSelfException)
+    async def reassign_mode(request: Request, exc: ReassignToSelfException):
+        raise ReassignToSelfHTTPException()

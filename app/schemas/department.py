@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -40,6 +40,11 @@ class DepartmentUpdate(BaseModel):
 class DepartmentRead(DepartmentBase):
     id: int
     created_at: datetime
+
+
+class DepartmentDeleteMode(str, Enum):
+    cascade = "cascade"
+    reassign = "reassign"
 
 
 class DepartmentTree(DepartmentRead):

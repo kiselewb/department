@@ -44,8 +44,7 @@ class BaseRepository(Generic[ModelType]):
         await self.session.commit()
         return result.scalar_one_or_none()
 
-    async def delete(self, **filter_by) -> ModelType:
-        stmt = delete(self.model).filter_by(**filter_by).returning(self.model)
-        result = await self.session.execute(stmt)
+    async def delete(self, **filter_by) -> None:
+        stmt = delete(self.model).filter_by(**filter_by)
+        await self.session.execute(stmt)
         await self.session.commit()
-        return result.scalars().one()
