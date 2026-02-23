@@ -1,10 +1,12 @@
 from collections import defaultdict
+from typing import Sequence
 
 from loguru import logger
 
+from app.models import Department
 from app.repositories.department import DepartmentRepository
 from app.schemas import DepartmentCreate, DepartmentUpdate
-from app.schemas.department import DepartmentDeleteMode
+from app.schemas.department import DepartmentDeleteMode, DepartmentTree
 from app.utils.exceptions import (
     RequestBodyRequiredException,
     DepartmentNotFoundException,
@@ -21,16 +23,17 @@ class DepartmentService:
     def __init__(self, repository: DepartmentRepository):
         self.repository = repository
 
-    async def get_departments(self):
+    async def get_departments(self) -> Sequence[Department]:
         return await self.repository.get_all()
 
     async def get_department_by_id(
         self, department_id: int, depth: int, include_employees: bool
-    ):
+    ) -> DepartmentTree:
         logger.info(
             f"Получение подразделения id={department_id}, глубина={depth}, вывод работников={include_employees}"
         )
         rows = await self.repository.get_department_tree(department_id, depth)
+        print(rows)
 
         if not rows:
             logger.warning("Ошибка получения - подразделение не найдено")
@@ -47,18 +50,20 @@ class DepartmentService:
                 employees_tree[emp.department_id].append(emp)
 
             logger.info("Дерево подразделения с работниками получено")
-            return self._build_tree(rows, employees_tree)
+            return DepartmentTree(**self._build_tree(rows, employees_tree))
         else:
             logger.info("Дерево подразделения получено")
-            return self._build_tree(rows)
+            return DepartmentTree(**self._build_tree(rows))
 
-    async def create_department(self, data: DepartmentCreate):
+    async def create_department(self, data: DepartmentCreate) -> Department:
         logger.info(f"Создание подразделения: {data.model_dump()}")
         result = await self.repository.create_department(data)
         logger.info(f"Подразделение создано: {result!r}")
         return result
 
-    async def update_department(self, department_id: int, data: DepartmentUpdate):
+    async def update_department(
+        self, department_id: int, data: DepartmentUpdate
+    ) -> Department:
         logger.info(f"Обновление подразделения id={department_id}, {data.model_dump()}")
         new_department_data = data.model_dump(exclude_unset=True)
 
@@ -107,7 +112,7 @@ class DepartmentService:
 
     async def delete_department(
         self, department_id: int, mode: str, reassign_to_department_id: int | None
-    ):
+    ) -> None:
         logger.info(
             f"Удаление подразделения id={department_id}, mode={mode}, new_parent_id={reassign_to_department_id}"
         )

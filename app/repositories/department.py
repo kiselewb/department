@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from loguru import logger
 from sqlalchemy import select, update, delete, literal
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +26,9 @@ class DepartmentRepository(BaseRepository[Department]):
     def __init__(self, session: AsyncSession):
         super().__init__(Department, session)
 
-    async def get_department_tree(self, department_id: int, max_depth: int):
+    async def get_department_tree(
+        self, department_id: int, max_depth: int
+    ) -> list[dict]:
         """
         WITH RECURSIVE subtree AS (
             SELECT id, name, parent_id, created_at, 0 AS depth
@@ -69,7 +73,9 @@ class DepartmentRepository(BaseRepository[Department]):
         result = await self.session.execute(select(subtree))
         return result.mappings().all()
 
-    async def get_employees_by_departments(self, department_ids: list[int]):
+    async def get_employees_by_departments(
+        self, department_ids: list[int]
+    ) -> Sequence[Employee]:
         stmt = (
             select(Employee)
             .where(Employee.department_id.in_(department_ids))
@@ -78,7 +84,7 @@ class DepartmentRepository(BaseRepository[Department]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def create_department(self, data: DepartmentCreate):
+    async def create_department(self, data: DepartmentCreate) -> Department:
         try:
             return await self.create(data)
 
@@ -128,7 +134,9 @@ class DepartmentRepository(BaseRepository[Department]):
         result = await self.session.execute(query)
         return result.scalar()
 
-    async def update_department(self, department_id: int, data: dict):
+    async def update_department(
+        self, department_id: int, data: dict
+    ) -> Department | None:
         try:
             stmt = (
                 update(self.model)
@@ -150,12 +158,12 @@ class DepartmentRepository(BaseRepository[Department]):
             else:
                 raise
 
-    async def delete_department_cascade(self, department_id: int):
+    async def delete_department_cascade(self, department_id: int) -> None:
         await self.delete(id=department_id)
 
     async def delete_department_reassign(
         self, department_id: int, reassign_to_department_id: int
-    ):
+    ) -> None:
         stmt = (
             update(Employee)
             .where(Employee.department_id == department_id)

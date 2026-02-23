@@ -48,7 +48,7 @@ async def update_department(
     return await service.update_department(department_id, new_department_data)
 
 
-@router.delete("/{department_id}")
+@router.delete("/{department_id}", status_code=204)
 async def delete_department(
     service: DepartmentServiceDependency,
     department_id: int,
@@ -56,7 +56,6 @@ async def delete_department(
     reassign_to_department_id: int | None = Query(None, gt=0),
 ):
     await service.delete_department(department_id, mode, reassign_to_department_id)
-    return {"status": "OK"}
 
 
 @router.post("/{department_id}/employees/")

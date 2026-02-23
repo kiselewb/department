@@ -13,7 +13,7 @@ class EmployeeRepository(BaseRepository[Employee]):
     def __init__(self, session: AsyncSession):
         super().__init__(Employee, session)
 
-    async def create_employee(self, department_id: int, data: EmployeeBase):
+    async def create_employee(self, department_id: int, data: EmployeeBase) -> Employee:
         employee_data = EmployeeCreate(**data.model_dump(), department_id=department_id)
 
         try:
