@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from app.models.employee import Employee
 from app.models.department import Department
 from app.repositories.base import BaseRepository
-from app.schemas import DepartmentCreate, DepartmentUpdate
+from app.schemas import DepartmentCreate
 from asyncpg.exceptions import (
     ForeignKeyViolationError,
     CheckViolationError,
@@ -126,9 +126,15 @@ class DepartmentRepository(BaseRepository[Department]):
 
     async def update_department(self, department_id: int, data: dict):
         try:
-            return await self.update(
-                DepartmentUpdate(**data), exclude_unset=True, id=department_id
+            stmt = (
+                update(self.model)
+                .where(self.model.id == department_id)
+                .values(**data)
+                .returning(self.model)
             )
+            result = await self.session.execute(stmt)
+            await self.session.commit()
+            return result.scalar_one_or_none()
 
         except IntegrityError as e:
             await self.session.rollback()

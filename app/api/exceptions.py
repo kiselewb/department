@@ -10,12 +10,12 @@ class AppHTTPException(HTTPException):
 
 
 class DataIsRequiredHTTPException(AppHTTPException):
-    status_code = 404
+    status_code = 422
     detail = "Укажите обязательные данные"
 
 
 class RequestBodyRequiredHTTPException(DataIsRequiredHTTPException):
-    status_code = 404
+    status_code = 422
     detail = "Тело запроса не может быть пустым"
 
 
@@ -35,12 +35,12 @@ class ParentDepartmentNotFoundHTTPException(AppHTTPException):
 
 
 class DepartmentNotSelfParentHTTPException(AppHTTPException):
-    status_code = 404
+    status_code = 409
     detail = "Подразделение не может быть родителем самому себе"
 
 
 class DepartmentNameExistsHTTPException(AppHTTPException):
-    status_code = 404
+    status_code = 409
     detail = "Наименование подразделения должно быть отличным от уже существующих подразделений в этом родителе"
 
 

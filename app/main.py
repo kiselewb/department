@@ -39,4 +39,4 @@ app.add_middleware(
 
 register_exception_handlers(app)
 
-app.include_router(main_router)
+app.include_router(main_router, prefix="/api/v1")

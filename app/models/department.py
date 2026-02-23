@@ -35,7 +35,7 @@ class Department(Base):
     parent: Mapped["Department | None"] = relationship(
         "Department",
         back_populates="children",
-        remote_side="Department.id",
+        remote_side=[id],
     )
     children: Mapped[list["Department"]] = relationship(
         "Department",

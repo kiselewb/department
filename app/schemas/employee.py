@@ -24,6 +24,7 @@ class EmployeeCreate(EmployeeBase):
     department_id: int
 
 
-class EmployeeRead(EmployeeCreate):
+class EmployeeRead(EmployeeBase):
     id: int
+    department_id: int
     created_at: datetime
