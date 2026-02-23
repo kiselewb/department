@@ -1,4 +1,5 @@
 from asyncpg.exceptions import ForeignKeyViolationError
+from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,9 @@ class EmployeeRepository(BaseRepository[Employee]):
 
         except IntegrityError as e:
             await self.session.rollback()
+            logger.warning(
+                f"Ошибка в создании работника: {e.orig.__cause__.__class__.__name__}"
+            )
             if isinstance(e.orig.__cause__, ForeignKeyViolationError):
                 raise DepartmentNotFoundException()
             else:

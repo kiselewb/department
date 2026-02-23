@@ -1,3 +1,4 @@
+from loguru import logger
 from sqlalchemy import select, update, delete, literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -83,6 +84,9 @@ class DepartmentRepository(BaseRepository[Department]):
 
         except IntegrityError as e:
             await self.session.rollback()
+            logger.warning(
+                f"Ошибка в создании подразделения: {e.orig.__cause__.__class__.__name__}"
+            )
             if isinstance(e.orig.__cause__, ForeignKeyViolationError):
                 raise ParentDepartmentNotFoundException()
             if isinstance(e.orig.__cause__, CheckViolationError):
@@ -138,6 +142,9 @@ class DepartmentRepository(BaseRepository[Department]):
 
         except IntegrityError as e:
             await self.session.rollback()
+            logger.warning(
+                f"Ошибка обновления подразделения: {e.orig.__cause__.__class__.__name__}"
+            )
             if isinstance(e.orig.__cause__, UniqueViolationError):
                 raise DepartmentNameExistsException()
             else:

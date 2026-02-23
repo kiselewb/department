@@ -1,4 +1,7 @@
 from collections import defaultdict
+
+from loguru import logger
+
 from app.repositories.department import DepartmentRepository
 from app.schemas import DepartmentCreate, DepartmentUpdate
 from app.schemas.department import DepartmentDeleteMode
@@ -24,9 +27,13 @@ class DepartmentService:
     async def get_department_by_id(
         self, department_id: int, depth: int, include_employees: bool
     ):
+        logger.info(
+            f"Получение подразделения id={department_id}, глубина={depth}, вывод работников={include_employees}"
+        )
         rows = await self.repository.get_department_tree(department_id, depth)
 
         if not rows:
+            logger.warning("Ошибка получения - подразделение не найдено")
             raise DepartmentNotFoundException()
 
         if include_employees:
@@ -39,20 +46,32 @@ class DepartmentService:
             for emp in employees:
                 employees_tree[emp.department_id].append(emp)
 
+            logger.info("Дерево подразделения с работниками получено")
             return self._build_tree(rows, employees_tree)
         else:
+            logger.info("Дерево подразделения получено")
             return self._build_tree(rows)
 
     async def create_department(self, data: DepartmentCreate):
-        return await self.repository.create_department(data)
+        logger.info(f"Создание подразделения: {data.model_dump()}")
+        result = await self.repository.create_department(data)
+        logger.info(f"Подразделение создано: {result!r}")
+        return result
 
     async def update_department(self, department_id: int, data: DepartmentUpdate):
+        logger.info(f"Обновление подразделения id={department_id}, {data.model_dump()}")
         new_department_data = data.model_dump(exclude_unset=True)
 
         if not new_department_data:
+            logger.warning(
+                "Ошибка обновления подразделения - данные для изменения не указаны"
+            )
             raise RequestBodyRequiredException()
 
         if not await self.repository.get_one_or_none(id=department_id):
+            logger.warning(
+                f"Ошибка обновления - подразделение не найдено, id={department_id}"
+            )
             raise DepartmentNotFoundException()
 
         if "parent_id" in new_department_data:
@@ -60,16 +79,28 @@ class DepartmentService:
 
             if new_parent_id is not None:
                 if new_parent_id == department_id:
+                    logger.warning(
+                        f"Ошибка обновления - подразделение не может быть родителем самому себе, id=parent_id={new_parent_id}"
+                    )
                     raise DepartmentNotSelfParentException()
 
                 if not await self.repository.get_one_or_none(id=new_parent_id):
+                    logger.warning(
+                        f"Ошибка обновления - родительское подразделение не найдено, parent_id={new_parent_id}"
+                    )
                     raise ParentDepartmentNotFoundException()
 
                 if await self.repository.is_department_descendant(
                     department_id, new_parent_id
                 ):
+                    logger.warning(
+                        f"Ошибка обновления - цикл в дереве подразделений, id={department_id} parent_id={new_parent_id}"
+                    )
                     raise DepartmentCycleException()
 
+        logger.info(
+            f"Подразделение успешно обновлено. id={department_id} new_data={new_department_data}"
+        )
         return await self.repository.update_department(
             department_id, new_department_data
         )
@@ -77,17 +108,30 @@ class DepartmentService:
     async def delete_department(
         self, department_id: int, mode: str, reassign_to_department_id: int | None
     ):
+        logger.info(
+            f"Удаление подразделения id={department_id}, mode={mode}, new_parent_id={reassign_to_department_id}"
+        )
         if not await self.repository.get_one_or_none(id=department_id):
+            logger.warning(
+                f"Ошибка удаления - подразделение не найдено, id={department_id}"
+            )
             raise DepartmentNotFoundException()
 
         if mode == DepartmentDeleteMode.reassign and reassign_to_department_id is None:
+            logger.warning("Ошибка удаления - поле reassign_to_department_id не задано")
             raise ReassignModeException()
 
         if mode == DepartmentDeleteMode.reassign:
             if reassign_to_department_id == department_id:
+                logger.warning(
+                    "Ошибка удаления - reassign_to_department_id равно department_id"
+                )
                 raise ReassignToSelfException()
 
             if not await self.repository.get_one_or_none(id=reassign_to_department_id):
+                logger.warning(
+                    f"Ошибка удаления - новое подразделение не найдено reassign_to_department_id={reassign_to_department_id}"
+                )
                 raise TargetDepartmentNotFoundException()
 
             await self.repository.delete_department_reassign(
@@ -95,6 +139,10 @@ class DepartmentService:
             )
         else:
             await self.repository.delete_department_cascade(department_id)
+
+        logger.info(
+            f"Успешное удаление подразделения id={department_id} в режиме {mode}"
+        )
 
     def _build_tree(
         self, rows: list, employees_tree: dict | None = None
