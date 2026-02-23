@@ -1,4 +1,4 @@
-from app.models import Department
+from collections import defaultdict
 from app.repositories.department import DepartmentRepository
 from app.schemas import DepartmentCreate, DepartmentUpdate
 from app.schemas.department import DepartmentDeleteMode
@@ -7,7 +7,10 @@ from app.utils.exceptions import (
     DepartmentNotFoundException,
     ParentDepartmentNotFoundException,
     DepartmentCycleException,
-    DepartmentNotSelfParentException, ReassignModeException, TargetDepartmentNotFoundException, ReassignToSelfException,
+    DepartmentNotSelfParentException,
+    ReassignModeException,
+    TargetDepartmentNotFoundException,
+    ReassignToSelfException,
 )
 
 
@@ -18,8 +21,27 @@ class DepartmentService:
     async def get_departments(self):
         return await self.repository.get_all()
 
-    async def get_department_by_id(self, department_id: int) -> Department:
-        pass
+    async def get_department_by_id(
+        self, department_id: int, depth: int, include_employees: bool
+    ):
+        rows = await self.repository.get_department_tree(department_id, depth)
+
+        if not rows:
+            raise DepartmentNotFoundException()
+
+        if include_employees:
+            department_ids = [row["id"] for row in rows]
+            employees = await self.repository.get_employees_by_departments(
+                department_ids
+            )
+
+            employees_tree = defaultdict(list)
+            for emp in employees:
+                employees_tree[emp.department_id].append(emp)
+
+            return self._build_tree(rows, employees_tree)
+        else:
+            return self._build_tree(rows)
 
     async def create_department(self, data: DepartmentCreate):
         return await self.repository.create_department(data)
@@ -52,7 +74,9 @@ class DepartmentService:
             department_id, new_department_data
         )
 
-    async def delete_department(self, department_id: int, mode: str, reassign_to_department_id: int | None):
+    async def delete_department(
+        self, department_id: int, mode: str, reassign_to_department_id: int | None
+    ):
         if not await self.repository.get_one_or_none(id=department_id):
             raise DepartmentNotFoundException()
 
@@ -66,6 +90,38 @@ class DepartmentService:
             if not await self.repository.get_one_or_none(id=reassign_to_department_id):
                 raise TargetDepartmentNotFoundException()
 
-            await self.repository.delete_department_reassign(department_id, reassign_to_department_id)
+            await self.repository.delete_department_reassign(
+                department_id, reassign_to_department_id
+            )
         else:
             await self.repository.delete_department_cascade(department_id)
+
+    def _build_tree(
+        self, rows: list, employees_tree: dict | None = None
+    ) -> dict | None:
+        nodes = {}
+        root = None
+
+        for row in rows:
+            node = {
+                "id": row["id"],
+                "name": row["name"],
+                "parent_id": row["parent_id"],
+                "created_at": row["created_at"],
+                "employees": employees_tree.get(row["id"], [])
+                if employees_tree
+                else [],
+                "children": [],
+            }
+            nodes[row["id"]] = node
+
+            if row["depth"] == 0:
+                root = node
+
+        for row in rows:
+            if row["depth"] > 0:
+                parent = nodes.get(row["parent_id"])
+                if parent:
+                    parent["children"].append(nodes[row["id"]])
+
+        return root

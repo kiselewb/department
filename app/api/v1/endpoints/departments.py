@@ -3,8 +3,13 @@ from typing import Sequence
 from fastapi import APIRouter, Query
 
 from app.api.dependencies import DepartmentServiceDependency, EmployeeServiceDependency
-from app.schemas import EmployeeRead
-from app.schemas.department import DepartmentRead, DepartmentCreate, DepartmentUpdate, DepartmentDeleteMode
+from app.schemas import EmployeeRead, DepartmentTree
+from app.schemas.department import (
+    DepartmentRead,
+    DepartmentCreate,
+    DepartmentUpdate,
+    DepartmentDeleteMode,
+)
 from app.schemas.employee import EmployeeBase
 
 router = APIRouter(prefix="/departments", tags=["Departments"])
@@ -21,10 +26,10 @@ async def get_departments(
 async def get_department(
     service: DepartmentServiceDependency,
     department_id: int,
-    depth: int = Query(1, le=5),
-    include_employees: bool = True
-):
-    pass
+    depth: int = Query(default=1, ge=1, le=5),
+    include_employees: bool = Query(default=True),
+) -> DepartmentTree:
+    return await service.get_department_by_id(department_id, depth, include_employees)
 
 
 @router.post("/")

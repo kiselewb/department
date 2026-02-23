@@ -3,6 +3,11 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+class DepartmentDeleteMode(str, Enum):
+    cascade = "cascade"
+    reassign = "reassign"
+
+
 class DepartmentBase(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     parent_id: int | None = None
@@ -40,11 +45,6 @@ class DepartmentUpdate(BaseModel):
 class DepartmentRead(DepartmentBase):
     id: int
     created_at: datetime
-
-
-class DepartmentDeleteMode(str, Enum):
-    cascade = "cascade"
-    reassign = "reassign"
 
 
 class DepartmentTree(DepartmentRead):

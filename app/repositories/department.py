@@ -1,9 +1,9 @@
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
 
-from app.models import Employee
+from app.models.employee import Employee
 from app.models.department import Department
 from app.repositories.base import BaseRepository
 from app.schemas import DepartmentCreate, DepartmentUpdate
@@ -22,6 +22,60 @@ from app.utils.exceptions import (
 class DepartmentRepository(BaseRepository[Department]):
     def __init__(self, session: AsyncSession):
         super().__init__(Department, session)
+
+    async def get_department_tree(self, department_id: int, max_depth: int):
+        """
+        WITH RECURSIVE subtree AS (
+            SELECT id, name, parent_id, created_at, 0 AS depth
+            FROM departments
+            WHERE id = :department_id
+
+            UNION ALL
+
+            SELECT d.id, d.name, d.parent_id, d.created_at, s.depth + 1
+            FROM departments d
+            JOIN subtree s ON d.parent_id = s.id
+            WHERE s.depth < :max_depth
+        )
+        SELECT * FROM subtree
+        """
+        subtree = (
+            select(
+                Department.id,
+                Department.name,
+                Department.parent_id,
+                Department.created_at,
+                literal(0).label("depth"),
+            )
+            .where(Department.id == department_id)
+            .cte(name="subtree", recursive=True)
+        )
+
+        depart = aliased(Department)
+
+        subtree = subtree.union_all(
+            select(
+                depart.id,
+                depart.name,
+                depart.parent_id,
+                depart.created_at,
+                (subtree.c.depth + 1).label("depth"),
+            )
+            .join(subtree, depart.parent_id == subtree.c.id)
+            .where(subtree.c.depth < max_depth)
+        )
+
+        result = await self.session.execute(select(subtree))
+        return result.mappings().all()
+
+    async def get_employees_by_departments(self, department_ids: list[int]):
+        stmt = (
+            select(Employee)
+            .where(Employee.department_id.in_(department_ids))
+            .order_by(Employee.created_at)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
     async def create_department(self, data: DepartmentCreate):
         try:
@@ -86,12 +140,16 @@ class DepartmentRepository(BaseRepository[Department]):
     async def delete_department_cascade(self, department_id: int):
         await self.delete(id=department_id)
 
-    async def delete_department_reassign(self, department_id: int, reassign_to_department_id: int):
+    async def delete_department_reassign(
+        self, department_id: int, reassign_to_department_id: int
+    ):
         stmt = (
             update(Employee)
             .where(Employee.department_id == department_id)
             .values(department_id=reassign_to_department_id)
         )
         await self.session.execute(stmt)
-        await self.session.execute(delete(self.model).where(self.model.id == department_id))
+        await self.session.execute(
+            delete(self.model).where(self.model.id == department_id)
+        )
         await self.session.commit()
