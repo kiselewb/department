@@ -33,7 +33,6 @@ class DepartmentService:
             f"Получение подразделения id={department_id}, глубина={depth}, вывод работников={include_employees}"
         )
         rows = await self.repository.get_department_tree(department_id, depth)
-        print(rows)
 
         if not rows:
             logger.warning("Ошибка получения - подразделение не найдено")
