@@ -16,10 +16,15 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PASS: str
     DB_NAME: str
+    TEST_DB_NAME: str
 
     @property
     def DB_URL(self) -> str:
         return f"postgresql+asyncpg://{self.DB_USER}:{str(self.DB_PASS)}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def TEST_DB_URL(self) -> str:
+        return f"postgresql+asyncpg://{self.DB_USER}:{str(self.DB_PASS)}@{self.DB_HOST}:{self.DB_PORT}/{self.TEST_DB_NAME}"
 
     # LOGGER SETTINGS
     IS_FILE_LOG: bool
